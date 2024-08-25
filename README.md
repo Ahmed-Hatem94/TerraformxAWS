@@ -1,3 +1,8 @@
+## Need to be added
+
+You'll need to add your key to be used for ssh to the ec2 instance
+
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
