@@ -1,5 +1,5 @@
 #! /bin/bash
-sudo hostnamectl set-hostname control-plane
+sudo hostnamectl set-hostname worker1
 sudo yum update -y
 sudo yum install docker -y
 sudo systemctl enable docker
@@ -17,8 +17,3 @@ exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
 EOF
 sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes --disableplugin=priorities
 sudo systemctl enable --now kubelet
-sudo kubeadm init --pod-network-cidr=192.168.0.0/16
-mkdir -p /home/ec2-user/.kube
-sudo cp -i /etc/kubernetes/admin.conf /home/ec2-user/.kube/config
-sudo chown ec2-user:ec2-user /home/ec2-user/.kube/config
-curl https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/calico.yaml -O

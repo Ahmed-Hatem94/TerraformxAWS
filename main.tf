@@ -54,3 +54,17 @@ resource "aws_instance" "Master_Node" {
   }
 
 }
+
+resource "aws_instance" "Worker_Node" {
+  ami                    = var.Master-ami
+  instance_type          = var.Master-instance-type
+  key_name               = aws_key_pair.key.key_name
+  vpc_security_group_ids = [aws_security_group.network-security-group.id]
+
+  user_data = file("install_kube_Worker.sh")
+
+  tags = {
+    Name = "Kube_Worker1"
+  }
+
+}
