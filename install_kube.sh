@@ -22,3 +22,4 @@ mkdir -p /home/ec2-user/.kube
 sudo cp -i /etc/kubernetes/admin.conf /home/ec2-user/.kube/config
 sudo chown ec2-user:ec2-user /home/ec2-user/.kube/config
 curl https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/calico.yaml -O
+kubectl apply -f calico.yaml

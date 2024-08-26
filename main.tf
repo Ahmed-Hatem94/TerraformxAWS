@@ -50,7 +50,7 @@ resource "aws_instance" "Master_Node" {
   user_data = file("install_kube.sh")
 
   tags = {
-    Name = "kubevm"
+    Name = "Kube_Master"
   }
 
 }
