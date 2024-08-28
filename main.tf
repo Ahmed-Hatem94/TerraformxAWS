@@ -47,9 +47,13 @@ resource "aws_instance" "Master_Node" {
   key_name               = aws_key_pair.key.key_name
   vpc_security_group_ids = [aws_security_group.network-security-group.id]
 
-  user_data = file("install_kube.sh")
+  #installation in EC2 using .sh script
+  user_data = <<EOF
+    #!/bin/bash
+    sudo hostnamectl set-hostname Master1
+    EOF
 
-  tags = {
+    tags = {
     Name = "Kube_Master"
   }
 
@@ -61,10 +65,26 @@ resource "aws_instance" "Worker_Node" {
   key_name               = aws_key_pair.key.key_name
   vpc_security_group_ids = [aws_security_group.network-security-group.id]
 
-  user_data = file("install_kube_Worker.sh")
+  #installation in EC2 using .sh script
+  user_data = <<EOF
+    #!/bin/bash
+    sudo hostnamectl set-hostname worker1
+    EOF
+
+
 
   tags = {
     Name = "Kube_Worker1"
   }
 
+}
+
+
+resource "null_resource" "ansible_runner" {
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+  provisioner "local-exec" {
+    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${aws_instance.Master_Node.public_ip},${aws_instance.Worker_Node.public_ip},' -u ec2-user --private-key ${path.module}/my-key ${path.module}/ansible/test_ansible.yml > Ansible.txt " 
+  }
 }

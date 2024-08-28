@@ -13,3 +13,6 @@ my-key
 my-key.pub
 
 *.tfplan
+
+#ansible output file
+Ansible.txt
