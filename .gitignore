@@ -15,4 +15,6 @@ my-key.pub
 *.tfplan
 
 #ansible output file
-Ansible.txt
+Ansible*.txt
+.vscode
+.vscode/*

@@ -1,0 +1,111 @@
+- name: Preparing ec2
+  hosts: all
+  become: true
+
+  tasks:
+   - name: Update all packages
+     ansible.builtin.yum:
+      name: '*'
+      state: latest
+
+   - name: Install docker
+     ansible.builtin.yum:
+      name: docker
+      state: latest
+
+   - name: Enable and start docker
+     ansible.builtin.service:
+      name: docker
+      state: started
+      enabled: true
+
+   - name: SELINUX setenforce to 0
+     ansible.builtin.command: setenforce 0
+     ignore_errors: true
+
+   - name: Changing SELINUX to permissive
+     ansible.builtin.lineinfile:
+      path: /etc/selinux/config
+      regexp: '^SELINUX='
+      line: SELINUX=permissive
+
+   - name: Add kubernetes repo
+     ansible.builtin.blockinfile:
+      path: /etc/yum.repos.d/kubernetes.repo
+      create: true
+      mode: "755"
+      block: |
+       [kubernetes]
+       name=Kubernetes
+       baseurl=https://pkgs.k8s.io/core:/stable:/v1.30/rpm/
+       enabled=1
+       gpgcheck=1
+       gpgkey=https://pkgs.k8s.io/core:/stable:/v1.30/rpm/repodata/repomd.xml.key
+       exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+
+   - name: Install kubeadm and kubelet
+     ansible.builtin.yum:
+      name: "{{ packages }}"
+      disable_excludes: 'kubernetes'
+      disable_plugin: priorities
+     vars:
+      packages:
+       - "kubelet"
+       - "kubeadm"
+       - "kubectl"
+
+   - name: Enable and start kubelet
+     ansible.builtin.service:
+      name: kubelet
+      enabled: true
+
+   - name: Initiate kubeadm
+     ansible.builtin.command: kubeadm init --pod-network-cidr=192.168.0.0/16
+     register: my_output_kubeadm
+     args:
+      chdir: /home/ec2-user/
+      creates: cluster_initialized.txt
+     ignore_errors: true
+     when: ansible_hostname == "control-plane"
+
+   - name: Create .kube directory
+     ansible.builtin.file:
+      path: /home/ec2-user/.kube
+      state: directory
+      mode: "755"
+      owner: ec2-user
+      group: ec2-user
+     when: ansible_hostname == "control-plane"
+
+   - name: Copy config files
+     ansible.builtin.copy:
+      src: /etc/kubernetes/admin.conf
+      dest: /home/ec2-user/.kube/config
+      remote_src: true
+      mode: "755"
+      owner: ec2-user
+     when: ansible_hostname == "control-plane"
+
+   - name: Apply calico
+     ansible.builtin.command: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/calico.yaml
+     become_user: ec2-user
+     register: my_output_kubectl
+     ignore_errors: true
+     args:
+      chdir: $HOME
+     when: ansible_hostname == "control-plane"
+
+
+   - name: Get the token for joining the worker nodes
+     shell: kubeadm token create  --print-join-command
+     register: kubernetes_join_command
+     when: ansible_hostname == "control-plane"
+
+   - ansible.builtin.debug:
+      msg: "{{ kubernetes_join_command.stdout }}"
+     when: ansible_hostname == "control-plane"
+
+   - name: Join the Worker nodes to the cluster.
+     command: "{{ hostvars.Master_Node.kubernetes_join_command.stdout_lines[0] }}"
+     register: joined_or_not
+     when: ansible_hostname == "worker1"

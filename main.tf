@@ -50,7 +50,7 @@ resource "aws_instance" "Master_Node" {
   #installation in EC2 using .sh script
   user_data = <<EOF
     #!/bin/bash
-    sudo hostnamectl set-hostname Master1
+    sudo hostnamectl set-hostname control-plane
     EOF
 
     tags = {
@@ -80,11 +80,24 @@ resource "aws_instance" "Worker_Node" {
 }
 
 
+resource "local_file" "inventory" {
+  depends_on = [ aws_instance.Master_Node, aws_instance.Worker_Node ]
+  content = templatefile("${path.module}/ansible/inventory.tpl",
+    {
+      Master_Node = aws_instance.Master_Node.*.public_ip
+      Worker_Node = aws_instance.Worker_Node.*.public_ip
+    }
+  )
+  filename = "${path.module}/ansible/inventory.yaml"
+}
+
+
 resource "null_resource" "ansible_runner" {
+  depends_on = [ local_file.inventory ]
   triggers = {
     always_run = "${timestamp()}"
   }
   provisioner "local-exec" {
-    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${aws_instance.Master_Node.public_ip},${aws_instance.Worker_Node.public_ip},' -u ec2-user --private-key ${path.module}/my-key ${path.module}/ansible/test_ansible.yml > Ansible.txt " 
+    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ${path.module}/ansible/inventory.yaml -u ec2-user --private-key ${path.module}/my-key ${path.module}/ansible/Prepare.yml > Ansible$(date +'%Y_%m_%d_%I_%M_%p').txt " 
   }
 }
