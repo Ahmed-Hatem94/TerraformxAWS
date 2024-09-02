@@ -18,3 +18,4 @@ my-key.pub
 Ansible*.txt
 .vscode
 .vscode/*
+ansible/inventory.yaml
