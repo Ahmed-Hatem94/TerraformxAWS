@@ -98,6 +98,6 @@ resource "null_resource" "ansible_runner" {
     always_run = "${timestamp()}"
   }
   provisioner "local-exec" {
-    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ${path.module}/ansible/inventory.yaml -u ec2-user --private-key ${path.module}/my-key ${path.module}/ansible/Prepare.yml > Ansible$(date +'%Y_%m_%d_%I_%M_%p').txt " 
+    command = "sleep 5; ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ${path.module}/ansible/inventory.yaml -u ec2-user --private-key ${path.module}/my-key ${path.module}/ansible/Prepare.yml > Ansible$(date +'%Y_%m_%d_%I_%M_%p').txt " 
   }
 }

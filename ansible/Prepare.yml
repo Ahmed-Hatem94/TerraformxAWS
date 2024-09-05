@@ -21,7 +21,12 @@
 
    - name: SELINUX setenforce to 0
      ansible.builtin.command: setenforce 0
+     register: setenforce
      ignore_errors: true
+     failed_when: setenforce.rc != 0 and setenforce.rc != 1
+
+  #  - ansible.builtin.debug:
+  #     msg: "{{ setenforce }}"
 
    - name: Changing SELINUX to permissive
      ansible.builtin.lineinfile:
@@ -66,7 +71,13 @@
       chdir: /home/ec2-user/
       creates: cluster_initialized.txt
      ignore_errors: true
-     when: ansible_hostname == "control-plane"
+     when: inventory_hostname in groups["Control_Plane"]
+     failed_when: my_output_kubeadm.rc != 0 and my_output_kubeadm.rc != 1
+     changed_when: "'ERROR FileAvailable' not in my_output_kubeadm.stderr"
+
+  #  - ansible.builtin.debug:
+  #     msg: "{{ my_output_kubeadm }}"
+  #    when: inventory_hostname in groups["Control_Plane"]
 
    - name: Create .kube directory
      ansible.builtin.file:
@@ -75,7 +86,7 @@
       mode: "755"
       owner: ec2-user
       group: ec2-user
-     when: ansible_hostname == "control-plane"
+     when: inventory_hostname in groups["Control_Plane"]
 
    - name: Copy config files
      ansible.builtin.copy:
@@ -84,7 +95,7 @@
       remote_src: true
       mode: "755"
       owner: ec2-user
-     when: ansible_hostname == "control-plane"
+     when: inventory_hostname in groups["Control_Plane"]
 
    - name: Apply calico
      ansible.builtin.command: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/calico.yaml
@@ -93,19 +104,31 @@
      ignore_errors: true
      args:
       chdir: $HOME
-     when: ansible_hostname == "control-plane"
+     when: inventory_hostname in groups["Control_Plane"]
+     changed_when: "'unchanged' is not in my_output_kubectl.stdout"
+
+  #  - ansible.builtin.debug:
+  #     msg: "{{ my_output_kubectl }}"
+  #    when: inventory_hostname in groups["Control_Plane"]
 
 
    - name: Get the token for joining the worker nodes
      shell: kubeadm token create  --print-join-command
      register: kubernetes_join_command
-     when: ansible_hostname == "control-plane"
+     when: inventory_hostname in groups["Control_Plane"]
+     changed_when: kubernetes_join_command.rc != 0
 
    - ansible.builtin.debug:
       msg: "{{ kubernetes_join_command.stdout }}"
-     when: ansible_hostname == "control-plane"
+     when: inventory_hostname in groups["Control_Plane"]
 
    - name: Join the Worker nodes to the cluster.
      command: "{{ hostvars.Master_Node.kubernetes_join_command.stdout_lines[0] }}"
      register: joined_or_not
-     when: ansible_hostname == "worker1"
+     when: inventory_hostname in groups["Workers"]
+     failed_when: joined_or_not.rc != 0 and joined_or_not.rc != 1
+     changed_when: "'/etc/kubernetes/kubelet.conf already exists' not in joined_or_not.stderr"
+
+  #  - ansible.builtin.debug:
+  #     msg: "{{ joined_or_not }}"
+  #    when: inventory_hostname in groups["Workers"]

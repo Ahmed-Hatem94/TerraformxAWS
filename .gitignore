@@ -19,3 +19,4 @@ Ansible*.txt
 .vscode
 .vscode/*
 ansible/inventory.yaml
+.gitmessage

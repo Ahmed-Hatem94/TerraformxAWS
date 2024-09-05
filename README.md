@@ -6,6 +6,8 @@ You'll need to add your key to be used for ssh to the ec2 instance
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
+ansible [core 2.16.0] is used for dependency on the Yum module which is removed in the latest version
+
 | Name | Version |
 |------|---------|
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | 5.59.0 |

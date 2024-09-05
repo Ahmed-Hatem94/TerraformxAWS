@@ -1,5 +1,5 @@
 %{ for ip in Master_Node ~}
-Master:
+Control_Plane:
   hosts:
     Master_Node:
       ansible_host: ${ip}
@@ -8,7 +8,7 @@ Master:
 
 %{ for ip in Worker_Node ~}
 
-Worker:
+Workers:
   hosts:
     Worker_Node_1:
       ansible_host: ${ip}
