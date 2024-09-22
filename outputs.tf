@@ -1,5 +1,5 @@
 output "ec2_public_ip" {
-  value = data.http.my_public_ip.response_body
+  value = "${chomp(data.http.my_public_ip.response_body)}/32"
 }
 
 
