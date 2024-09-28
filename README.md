@@ -1,6 +1,7 @@
 ## Need to be added
 
-You'll need to add your key to be used for ssh to the ec2 instance
+You'll need to add your key to be used for ssh to the ec2 instance by 
+ssh-keygen -t rsa -b 2048 -f ./my-key
 
 
 <!-- BEGIN_TF_DOCS -->
