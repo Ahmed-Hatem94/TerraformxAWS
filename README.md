@@ -8,7 +8,11 @@ ssh-keygen -t rsa -b 2048 -f ./my-key
 
 add your AWS credentials to the .env file and run the build command using the following syntax:
 
-cat .env | xargs printf -- '--build-arg %s\n' | xargs docker build -t MY_IMAGE .
+cat .env | xargs printf -- '--build-arg %s\n' | xargs docker build -t readyenv .
+
+then run the image by
+
+docker run -it readyenv /bin/bash
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
