@@ -1,23 +1,27 @@
-## Need to be added
-
-You'll need to add your key to be used for ssh to the ec2 instance by 
-ssh-keygen -t rsa -b 2048 -f ./my-key
-
 
 ## to work with the Dockerfile
 
-add your AWS credentials to the .env file and run the build command using the following syntax:
+add your AWS credentials to the .env file as below:
 
-cat .env | xargs printf -- '--build-arg %s\n' | xargs docker build -t readyenv .
+
+```#!/bin/sh
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION==
+```
+
+then run the build command using the following syntax:
+
+`cat .env | xargs printf -- '--build-arg %s\n' | xargs docker build -t readyenv .`
 
 then run the image by
 
-docker run -it readyenv /bin/bash
+`docker run -it readyenv /bin/bash`
+
+
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
-
-ansible [core 2.16.0] is used for dependency on the Yum module which is removed in the latest version
 
 | Name | Version |
 |------|---------|
@@ -31,6 +35,7 @@ ansible [core 2.16.0] is used for dependency on the Yum module which is removed 
 | <a name="provider_http"></a> [http](#provider\_http) | 3.4.4 |
 | <a name="provider_local"></a> [local](#provider\_local) | 2.5.1 |
 | <a name="provider_null"></a> [null](#provider\_null) | 3.2.2 |
+| <a name="provider_tls"></a> [tls](#provider\_tls) | 4.0.6 |
 
 ## Modules
 
@@ -46,6 +51,7 @@ No modules.
 | [aws_security_group.network-security-group](https://registry.terraform.io/providers/hashicorp/aws/5.59.0/docs/resources/security_group) | resource |
 | [local_file.inventory](https://registry.terraform.io/providers/hashicorp/local/latest/docs/resources/file) | resource |
 | [null_resource.ansible_runner](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
+| [tls_private_key.priv_key](https://registry.terraform.io/providers/hashicorp/tls/latest/docs/resources/private_key) | resource |
 | [http_http.my_public_ip](https://registry.terraform.io/providers/hashicorp/http/latest/docs/data-sources/http) | data source |
 
 ## Inputs

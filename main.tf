@@ -1,6 +1,17 @@
+resource "tls_private_key" "priv_key" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
 resource "aws_key_pair" "key" {
   key_name   = var.key-name
-  public_key = file("${path.module}/my-key.pub")
+  public_key = tls_private_key.priv_key.public_key_openssh
+  
+
+  provisioner "local-exec" {
+    
+    command = "echo '${tls_private_key.priv_key.private_key_pem}' > ./my-key.pem && chmod 0600 ./my-key.pem"
+  }
 }
 
 
@@ -98,6 +109,6 @@ resource "null_resource" "ansible_runner" {
     always_run = "${timestamp()}"
   }
   provisioner "local-exec" {
-    command = "sleep 5; ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ${path.module}/ansible/inventory.yaml -u ec2-user --private-key ${path.module}/my-key ${path.module}/ansible/Prepare.yml > Ansible$(date +'%Y_%m_%d_%I_%M_%p').txt " 
+    command = "sleep 5; ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ${path.module}/ansible/inventory.yaml -u ec2-user --private-key ${path.module}/my-key.pem ${path.module}/ansible/Prepare.yml > Ansible$(date +'%Y_%m_%d_%I_%M_%p').txt " 
   }
 }

@@ -129,6 +129,12 @@
      failed_when: joined_or_not.rc != 0 and joined_or_not.rc != 1
      changed_when: "'/etc/kubernetes/kubelet.conf already exists' not in joined_or_not.stderr"
 
+   - name: Add ec2-user to docker group
+     ansible.builtin.user:
+      user: ec2-user
+      group: docker
+      append: true
+
   #  - ansible.builtin.debug:
   #     msg: "{{ joined_or_not }}"
   #    when: inventory_hostname in groups["Workers"]

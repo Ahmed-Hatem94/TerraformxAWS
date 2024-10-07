@@ -12,9 +12,7 @@
 
 
 #Keys
-my-key
-my-key.pub
-
+*my-key*
 
 #ansible files
 Ansible*.txt
