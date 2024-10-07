@@ -4,6 +4,12 @@ You'll need to add your key to be used for ssh to the ec2 instance by
 ssh-keygen -t rsa -b 2048 -f ./my-key
 
 
+## to work with the Dockerfile
+
+add your AWS credentials to the .env file and run the build command using the following syntax:
+
+cat .env | xargs printf -- '--build-arg %s\n' | xargs docker build -t MY_IMAGE .
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 

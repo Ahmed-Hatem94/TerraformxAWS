@@ -8,15 +8,22 @@
 
 #lock files
 .terraform.lock.*
+*.tfplan
 
+
+#Keys
 my-key
 my-key.pub
 
-*.tfplan
 
-#ansible output file
+#ansible files
 Ansible*.txt
+ansible/inventory.yaml
+
+
+#vscode files
 .vscode
 .vscode/*
-ansible/inventory.yaml
-.gitmessage
+
+#env file used for dockers
+.env
