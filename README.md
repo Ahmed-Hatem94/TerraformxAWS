@@ -1,5 +1,5 @@
 
-## to work with the Dockerfile
+## Working with the Dockerfile
 
 add your AWS credentials to the .env file as below:
 
@@ -18,7 +18,9 @@ then run the image by
 
 `docker run -it readyenv /bin/bash`
 
+## Ansible Version
 
+Ansible core 2.16.0 is required to support the yum module.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

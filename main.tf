@@ -4,16 +4,20 @@ resource "tls_private_key" "priv_key" {
 }
 
 resource "aws_key_pair" "key" {
+  depends_on = [tls_private_key.priv_key]
   key_name   = var.key-name
   public_key = tls_private_key.priv_key.public_key_openssh
-  
 
-  provisioner "local-exec" {
-    
-    command = "echo '${tls_private_key.priv_key.private_key_pem}' > ./my-key.pem && chmod 0600 ./my-key.pem"
-  }
+
 }
 
+resource "local_file" "priv_key" {
+  depends_on = [ tls_private_key.priv_key ]
+  filename = "${path.module}/my-key.pem"
+  content = tls_private_key.priv_key.private_key_pem
+  file_permission = 0600
+
+}
 
 data "http" "my_public_ip" {
   url = "https://ipv4.icanhazip.com"
@@ -45,6 +49,18 @@ resource "aws_security_group" "network-security-group" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  egress {
+    cidr_blocks = [
+      "196.150.44.176/32",
+    ]
+    from_port        = 0
+    ipv6_cidr_blocks = []
+    prefix_list_ids  = []
+    protocol         = "tcp"
+    security_groups  = []
+    self             = false
+    to_port          = 65535
+  }
   # Not recommended to add "0.0.0.0/0" instead we need to be more specific with the IP ranges to allow connectivity from.
   tags = {
     Name = "nsg-inbound"
@@ -64,7 +80,7 @@ resource "aws_instance" "Master_Node" {
     sudo hostnamectl set-hostname control-plane
     EOF
 
-    tags = {
+  tags = {
     Name = "Kube_Master"
   }
 
@@ -92,7 +108,7 @@ resource "aws_instance" "Worker_Node" {
 
 
 resource "local_file" "inventory" {
-  depends_on = [ aws_instance.Master_Node, aws_instance.Worker_Node ]
+  depends_on = [aws_instance.Master_Node, aws_instance.Worker_Node]
   content = templatefile("${path.module}/ansible/inventory.tpl",
     {
       Master_Node = aws_instance.Master_Node.*.public_ip
@@ -104,11 +120,11 @@ resource "local_file" "inventory" {
 
 
 resource "null_resource" "ansible_runner" {
-  depends_on = [ local_file.inventory ]
+  depends_on = [local_file.inventory]
   triggers = {
     always_run = "${timestamp()}"
   }
   provisioner "local-exec" {
-    command = "sleep 5; ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ${path.module}/ansible/inventory.yaml -u ec2-user --private-key ${path.module}/my-key.pem ${path.module}/ansible/Prepare.yml > Ansible$(date +'%Y_%m_%d_%I_%M_%p').txt " 
+    command = "sleep 5; ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ${path.module}/ansible/inventory.yaml -u ec2-user --private-key ${path.module}/my-key.pem ${path.module}/ansible/Prepare.yml > Ansible$(date +'%Y_%m_%d_%I_%M_%p').txt "
   }
 }
