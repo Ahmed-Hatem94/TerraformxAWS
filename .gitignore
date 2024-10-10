@@ -25,3 +25,4 @@ ansible/inventory.yaml
 
 #env file used for dockers
 .env
+*note*

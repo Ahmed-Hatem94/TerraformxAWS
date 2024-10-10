@@ -49,18 +49,6 @@ resource "aws_security_group" "network-security-group" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  egress {
-    cidr_blocks = [
-      "196.150.44.176/32",
-    ]
-    from_port        = 0
-    ipv6_cidr_blocks = []
-    prefix_list_ids  = []
-    protocol         = "tcp"
-    security_groups  = []
-    self             = false
-    to_port          = 65535
-  }
   # Not recommended to add "0.0.0.0/0" instead we need to be more specific with the IP ranges to allow connectivity from.
   tags = {
     Name = "nsg-inbound"
@@ -125,6 +113,6 @@ resource "null_resource" "ansible_runner" {
     always_run = "${timestamp()}"
   }
   provisioner "local-exec" {
-    command = "sleep 5; ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ${path.module}/ansible/inventory.yaml -u ec2-user --private-key ${path.module}/my-key.pem ${path.module}/ansible/Prepare.yml > Ansible$(date +'%Y_%m_%d_%I_%M_%p').txt "
+    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ${path.module}/ansible/inventory.yaml -u ec2-user --private-key ${path.module}/my-key.pem ${path.module}/ansible/Prepare.yml > Ansible$(date +'%Y_%m_%d_%I_%M_%p').txt "
   }
 }

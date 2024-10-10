@@ -1,8 +1,17 @@
 - name: Preparing ec2
   hosts: all
   become: true
+  gather_facts: false
 
   tasks:
+
+   - name: Check SSH connection for all instances
+     ansible.builtin.wait_for_connection:
+      timeout: 300
+
+   - name: Gather facts
+     ansible.builtin.setup:
+
    - name: Update all packages
      ansible.builtin.yum:
       name: '*'
@@ -132,7 +141,7 @@
    - name: Add ec2-user to docker group
      ansible.builtin.user:
       user: ec2-user
-      group: docker
+      groups: docker
       append: true
 
   #  - ansible.builtin.debug:
