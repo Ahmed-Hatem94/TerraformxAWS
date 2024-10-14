@@ -12,15 +12,15 @@ resource "aws_key_pair" "key" {
 }
 
 resource "local_file" "priv_key" {
-  depends_on = [ tls_private_key.priv_key ]
-  filename = "${path.module}/my-key.pem"
-  content = tls_private_key.priv_key.private_key_pem
+  depends_on      = [tls_private_key.priv_key]
+  filename        = "${path.module}/my-key.pem"
+  content         = tls_private_key.priv_key.private_key_pem
   file_permission = 0600
 
 }
 
 data "http" "my_public_ip" {
-  url = "https://ipv4.icanhazip.com"
+  url = "http://ipv4.icanhazip.com"
 }
 
 # Creating a security group to restrict/allow inbound connectivity
@@ -62,34 +62,21 @@ resource "aws_instance" "Master_Node" {
   key_name               = aws_key_pair.key.key_name
   vpc_security_group_ids = [aws_security_group.network-security-group.id]
 
-  #installation in EC2 using .sh script
-  user_data = <<EOF
-    #!/bin/bash
-    sudo hostnamectl set-hostname control-plane
-    EOF
-
   tags = {
-    Name = "Kube_Master"
+    Name = "control-plane"
   }
 
 }
 
 resource "aws_instance" "Worker_Node" {
-  ami                    = var.Master-ami
-  instance_type          = var.Master-instance-type
+  count                  = var.Worker-count
+  ami                    = var.Worker-ami
+  instance_type          = var.Worker-instance-type
   key_name               = aws_key_pair.key.key_name
   vpc_security_group_ids = [aws_security_group.network-security-group.id]
 
-  #installation in EC2 using .sh script
-  user_data = <<EOF
-    #!/bin/bash
-    sudo hostnamectl set-hostname worker1
-    EOF
-
-
-
   tags = {
-    Name = "Kube_Worker1"
+    Name = "worker${count.index}"
   }
 
 }
@@ -99,8 +86,13 @@ resource "local_file" "inventory" {
   depends_on = [aws_instance.Master_Node, aws_instance.Worker_Node]
   content = templatefile("${path.module}/ansible/inventory.tpl",
     {
-      Master_Node = aws_instance.Master_Node.*.public_ip
-      Worker_Node = aws_instance.Worker_Node.*.public_ip
+      master = {
+        "${aws_instance.Master_Node.tags.Name}" = "${aws_instance.Master_Node.public_ip}"
+      }
+      worker = {
+        for instance in aws_instance.Worker_Node :
+        instance.tags.Name => instance.public_ip
+      }
     }
   )
   filename = "${path.module}/ansible/inventory.yaml"
@@ -113,6 +105,6 @@ resource "null_resource" "ansible_runner" {
     always_run = "${timestamp()}"
   }
   provisioner "local-exec" {
-    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ${path.module}/ansible/inventory.yaml -u ec2-user --private-key ${path.module}/my-key.pem ${path.module}/ansible/Prepare.yml > Ansible$(date +'%Y_%m_%d_%I_%M_%p').txt "
+    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ${path.module}/ansible/inventory.yaml --private-key ${path.module}/my-key.pem ${path.module}/ansible/Prepare.yml > Ansible$(date +'%Y_%m_%d_%I_%M_%p').txt "
   }
 }
