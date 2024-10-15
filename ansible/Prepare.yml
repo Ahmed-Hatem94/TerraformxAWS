@@ -9,6 +9,11 @@
      ansible.builtin.wait_for_connection:
       timeout: 300
 
+   - name: Set hostname for all instances
+     ansible.builtin.hostname:
+      name: "{{ inventory_hostname }}"
+
+
    - name: Gather facts
      ansible.builtin.setup:
 
@@ -132,7 +137,7 @@
      when: inventory_hostname in groups["Control_Plane"]
 
    - name: Join the Worker nodes to the cluster.
-     command: "{{ hostvars.Master_Node.kubernetes_join_command.stdout_lines[0] }}"
+     command: "{{ hostvars[groups['Control_Plane'][0]].kubernetes_join_command.stdout_lines[0] }}"
      register: joined_or_not
      when: inventory_hostname in groups["Workers"]
      failed_when: joined_or_not.rc != 0 and joined_or_not.rc != 1

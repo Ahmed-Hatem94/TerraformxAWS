@@ -1,16 +1,16 @@
-%{ for ip in Master_Node ~}
 Control_Plane:
   hosts:
-    Master_Node:
-      ansible_host: ${ip}
+%{ for config_key, config_value in master ~}
+    ${config_key}:
+      ansible_host: ${config_value}
       ansible_user: ec2-user
 %{ endfor ~}
 
-%{ for ip in Worker_Node ~}
-
 Workers:
   hosts:
-    Worker_Node_1:
-      ansible_host: ${ip}
+  %{ for config_key, config_value in worker ~}
+
+    ${config_key}:
+      ansible_host: ${config_value}
       ansible_user: ec2-user
 %{ endfor ~}
