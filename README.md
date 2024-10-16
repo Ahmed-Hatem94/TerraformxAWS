@@ -1,22 +1,20 @@
 
-## Working with the Dockerfile
+## Working with project
 
-add your AWS credentials to the .env file as below:
-
+you'll need to run the starting script "[projectSetup.sh](projectSetup.sh)" by the following way
 
 ```#!/bin/sh
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_DEFAULT_REGION==
+. projectSetup.sh
 ```
 
-then run the build command using the following syntax:
+or
 
-`cat .env | xargs printf -- '--build-arg %s\n' | xargs docker build -t readyenv .`
+```#!/bin/sh
+source projectSetup.sh
+```
+> [!NOTE]  
+> the script needs to run by this way to be able to export AWS credentials as env variables
 
-then run the image by
-
-`docker run -it readyenv /bin/bash`
 
 ## Ansible Version
 

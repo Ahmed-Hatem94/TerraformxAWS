@@ -6,6 +6,7 @@ read -p "do you want to run the docker container now? (y/n): " containerrun
 if [[ $containerrun == "Y" || $containerrun == "y" ]]; then
     docker run -it readyenv /bin/bash
 else
+    echo "if you want to run the container you can run it using this command (docker run -it readyenv /bin/bash)"
     return 0
 fi
 
