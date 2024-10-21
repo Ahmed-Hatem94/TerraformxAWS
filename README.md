@@ -1,3 +1,6 @@
+## Usage
+
+This Project is using terraform to deploy on AWS, an EC2 (1 control-plane and X number of worker nodes) which is then handled by ansible to install kubernetes and preparing the cluster to be ready
 
 ## Working with project
 
@@ -14,6 +17,9 @@ source projectSetup.sh
 ```
 > [!NOTE]  
 > the script needs to run by this way to be able to export AWS credentials as env variables
+
+after this you can start using the project by terraform plan  or terraform apply 
+
 
 
 ## Ansible Version
@@ -59,19 +65,19 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_Master-ami"></a> [Master-ami](#input\_Master-ami) | n/a | `any` | n/a | yes |
-| <a name="input_Master-instance-type"></a> [Master-instance-type](#input\_Master-instance-type) | n/a | `any` | n/a | yes |
-| <a name="input_Worker-ami"></a> [Worker-ami](#input\_Worker-ami) | n/a | `any` | n/a | yes |
-| <a name="input_Worker-count"></a> [Worker-count](#input\_Worker-count) | n/a | `number` | `"1"` | no |
-| <a name="input_Worker-instance-type"></a> [Worker-instance-type](#input\_Worker-instance-type) | n/a | `any` | n/a | yes |
-| <a name="input_key-name"></a> [key-name](#input\_key-name) | n/a | `any` | n/a | yes |
-| <a name="input_network-security-group-name"></a> [network-security-group-name](#input\_network-security-group-name) | n/a | `any` | n/a | yes |
+| <a name="input_Master-ami"></a> [Master-ami](#input\_Master-ami) | AWS ami used for master instance, you can updated to the latest ami | `string` | `"ami-00f251754ac5da7f0"` | no |
+| <a name="input_Master-instance-type"></a> [Master-instance-type](#input\_Master-instance-type) | AWS instance type for the master node, the defualt will be t2.medium as it's the least for the kubernetes | `string` | `"t2.medium"` | no |
+| <a name="input_Worker-ami"></a> [Worker-ami](#input\_Worker-ami) | AWS ami used for Worker instance, you can updated to the latest ami | `string` | `"ami-00f251754ac5da7f0"` | no |
+| <a name="input_Worker-count"></a> [Worker-count](#input\_Worker-count) | Worker nodes count to be deployed | `number` | `"1"` | no |
+| <a name="input_Worker-instance-type"></a> [Worker-instance-type](#input\_Worker-instance-type) | AWS instance type for the master node, the defualt will be t2.medium as it's the least for the kubernetes | `string` | `"t2.medium"` | no |
+| <a name="input_key-name"></a> [key-name](#input\_key-name) | Your SSH-Key name | `string` | `"my-key"` | no |
+| <a name="input_network-security-group-name"></a> [network-security-group-name](#input\_network-security-group-name) | Your Network security group name | `string` | `"nsg-inbound"` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| <a name="output_ec2_Master_ip"></a> [ec2\_Master\_ip](#output\_ec2\_Master\_ip) | n/a |
-| <a name="output_ec2_Worker_ip"></a> [ec2\_Worker\_ip](#output\_ec2\_Worker\_ip) | n/a |
-| <a name="output_your_public_ip"></a> [your\_public\_ip](#output\_your\_public\_ip) | n/a |
+| <a name="output_ec2_Master_ip"></a> [ec2\_Master\_ip](#output\_ec2\_Master\_ip) | Your Control-plane ip |
+| <a name="output_ec2_Worker_ip"></a> [ec2\_Worker\_ip](#output\_ec2\_Worker\_ip) | All your worker nodes ips |
+| <a name="output_your_public_ip"></a> [your\_public\_ip](#output\_your\_public\_ip) | Your current public ip |
 <!-- END_TF_DOCS -->

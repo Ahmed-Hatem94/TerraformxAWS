@@ -13,7 +13,7 @@ resource "aws_key_pair" "key" {
 
 resource "local_file" "priv_key" {
   depends_on      = [tls_private_key.priv_key]
-  filename        = "${path.module}/my-key.pem"
+  filename        = "${path.module}/${var.key-name}.pem"
   content         = tls_private_key.priv_key.private_key_pem
   file_permission = 0600
 
@@ -105,6 +105,6 @@ resource "null_resource" "ansible_runner" {
     always_run = "${timestamp()}"
   }
   provisioner "local-exec" {
-    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ${path.module}/ansible/inventory.yaml --private-key ${path.module}/my-key.pem ${path.module}/ansible/Prepare.yml > Ansible$(date +'%Y_%m_%d_%I_%M_%p').txt "
+    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ${path.module}/ansible/inventory.yaml --private-key ${path.module}/${var.key-name}.pem ${path.module}/ansible/Prepare.yml > Ansible$(date +'%Y_%m_%d_%I_%M_%p').txt "
   }
 }
