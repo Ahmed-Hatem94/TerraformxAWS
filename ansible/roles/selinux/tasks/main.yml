@@ -1,0 +1,11 @@
+- name: SELINUX setenforce to 0
+  ansible.builtin.command: setenforce 0
+  register: setenforce
+  ignore_errors: true
+  failed_when: setenforce.rc != 0 and setenforce.rc != 1
+
+- name: Changing SELINUX to permissive
+  ansible.builtin.lineinfile:
+    path: /etc/selinux/config
+    regexp: '^SELINUX='
+    line: SELINUX=permissive

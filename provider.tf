@@ -7,6 +7,4 @@ terraform {
   }
 }
 
-provider "aws" {
-  region = "us-east-1"
-}
+// ...add other provider configurations as needed...

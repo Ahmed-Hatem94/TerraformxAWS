@@ -10,23 +10,9 @@ variable "network-security-group-name" {
   type        = string
 }
 
-variable "Master-ami" {
-  description = "AWS ami used for master instance, you can updated to the latest ami"
-  default     = "ami-00f251754ac5da7f0"
-  type        = string
-
-}
-
 variable "Master-instance-type" {
   description = "AWS instance type for the master node, the defualt will be t2.medium as it's the least for the kubernetes "
   default     = "t2.medium"
-  type        = string
-
-}
-
-variable "Worker-ami" {
-  description = "AWS ami used for Worker instance, you can updated to the latest ami"
-  default     = "ami-00f251754ac5da7f0"
   type        = string
 }
 
@@ -39,5 +25,39 @@ variable "Worker-instance-type" {
 variable "Worker-count" {
   description = "Worker nodes count to be deployed"
   type        = number
-  default     = "1"
+  default     = 2
+}
+
+variable "region" {
+  description = "The AWS region to deploy resources"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "master_root_block_device" {
+  description = "The root block device configuration for the master instance"
+  type = object({
+    volume_type           = string
+    volume_size           = number
+    delete_on_termination = bool
+  })
+  default = {
+    volume_type           = "gp2"
+    volume_size           = 8
+    delete_on_termination = true
+  }
+}
+
+variable "worker_root_block_device" {
+  description = "The root block device configuration for the worker instances"
+  type = object({
+    volume_type           = string
+    volume_size           = number
+    delete_on_termination = bool
+  })
+  default = {
+    volume_type           = "gp2"
+    volume_size           = 8
+    delete_on_termination = true
+  }
 }

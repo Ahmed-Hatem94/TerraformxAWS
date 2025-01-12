@@ -1,0 +1,11 @@
+- name: Check SSH connection for all instances
+  ansible.builtin.wait_for_connection:
+    timeout: 300
+
+- name: Set hostname for all instances
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Gather facts
+  ansible.builtin.setup:
+  tags: always

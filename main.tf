@@ -1,3 +1,23 @@
+locals {
+  ami_filter_name = "amzn2-ami-hvm-*-x86_64-gp2"
+  ami_owner       = "amazon"
+}
+
+data "aws_ami" "latest_amazon_linux" {
+  most_recent = true
+  owners      = [local.ami_owner]
+
+  filter {
+    name   = "name"
+    values = [local.ami_filter_name]
+  }
+
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
+}
+
 resource "tls_private_key" "priv_key" {
   algorithm = "RSA"
   rsa_bits  = 2048
@@ -7,8 +27,6 @@ resource "aws_key_pair" "key" {
   depends_on = [tls_private_key.priv_key]
   key_name   = var.key-name
   public_key = tls_private_key.priv_key.public_key_openssh
-
-
 }
 
 resource "local_file" "priv_key" {
@@ -16,88 +34,71 @@ resource "local_file" "priv_key" {
   filename        = "${path.module}/${var.key-name}.pem"
   content         = tls_private_key.priv_key.private_key_pem
   file_permission = 0600
-
 }
 
 data "http" "my_public_ip" {
   url = "http://ipv4.icanhazip.com"
 }
 
-# Creating a security group to restrict/allow inbound connectivity
-resource "aws_security_group" "network-security-group" {
+resource "aws_vpc" "main" {
+  cidr_block = "10.0.0.0/16"
+  enable_dns_support = true
+  enable_dns_hostnames = true
+  tags = {
+    Name = "main-vpc"
+  }
+}
+
+module "security_group" {
+  source      = "./modules/security_group"
   name        = var.network-security-group-name
   description = "Allow TLS inbound traffic"
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["${chomp(data.http.my_public_ip.response_body)}/32"]
-  }
-  ingress {
-    description = "internal security group"
-    self        = true
-    from_port   = "0"
-    to_port     = "0"
-    protocol    = "-1"
-  }
-  egress {
-    description = "internet"
-    from_port   = "0"
-    to_port     = "0"
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  # Not recommended to add "0.0.0.0/0" instead we need to be more specific with the IP ranges to allow connectivity from.
+  my_public_ip = "${chomp(data.http.my_public_ip.response_body)}/32"
   tags = {
     Name = "nsg-inbound"
   }
-
 }
 
-resource "aws_instance" "Master_Node" {
-  ami                    = var.Master-ami
-  instance_type          = var.Master-instance-type
-  key_name               = aws_key_pair.key.key_name
-  vpc_security_group_ids = [aws_security_group.network-security-group.id]
-
+module "master_instance" {
+  source            = "./modules/ec2_instance"
+  ami               = data.aws_ami.latest_amazon_linux.id
+  instance_type     = var.Master-instance-type
+  key_name          = aws_key_pair.key.key_name
+  security_group_ids = [module.security_group.id]
+  root_block_device = var.master_root_block_device
   tags = {
     Name = "control-plane"
   }
-
 }
 
-resource "aws_instance" "Worker_Node" {
-  count                  = var.Worker-count
-  ami                    = var.Worker-ami
-  instance_type          = var.Worker-instance-type
-  key_name               = aws_key_pair.key.key_name
-  vpc_security_group_ids = [aws_security_group.network-security-group.id]
-
+module "worker_instance" {
+  source            = "./modules/ec2_instance"
+  ami               = data.aws_ami.latest_amazon_linux.id
+  instance_type     = var.Worker-instance-type
+  key_name          = aws_key_pair.key.key_name
+  security_group_ids = [module.security_group.id]
+  instance_count    = var.Worker-count
+  root_block_device = var.worker_root_block_device
   tags = {
-    Name = "worker${count.index}"
+    Name = "worker"
   }
-
 }
-
 
 resource "local_file" "inventory" {
-  depends_on = [aws_instance.Master_Node, aws_instance.Worker_Node]
+  depends_on = [module.master_instance, module.worker_instance]
   content = templatefile("${path.module}/ansible/inventory.tpl",
     {
       master = {
-        "${aws_instance.Master_Node.tags.Name}" = "${aws_instance.Master_Node.public_ip}"
+        "control-plane" = module.master_instance.public_ip[0]
       }
-      worker = {
-        for instance in aws_instance.Worker_Node :
-        instance.tags.Name => instance.public_ip
-      }
+      worker = zipmap(
+        [for i in range(length(module.worker_instance.public_ip)) : "worker${i}"],
+        module.worker_instance.public_ip
+      )
     }
   )
   filename = "${path.module}/ansible/inventory.yaml"
 }
-
 
 resource "null_resource" "ansible_runner" {
   depends_on = [local_file.inventory]

@@ -1,0 +1,660 @@
+diff --git a/.devcontainer/devcontainer.json b/.devcontainer/devcontainer.json
+index adb482f..52ae017 100644
+--- a/.devcontainer/devcontainer.json
++++ b/.devcontainer/devcontainer.json
+@@ -6,11 +6,15 @@
+ 		// Sets the run context to one level up instead of the .devcontainer folder.
+ 		"context": "..",
+ 		// Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
+-		"dockerfile": "./testDockerfile"
++		"dockerfile": "./DevcontainerDockerfile"
+ 	}, 
+ 
+ 	// Features to add to the dev container. More info: https://containers.dev/features.
+-	// "features": {},
++	"features": {
++		"ghcr.io/devcontainers/features/git:1": {},
++		"ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {},
++		"ghcr.io/devcontainers/features/terraform:1":{}
++	},
+ 
+ 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+ 	// "forwardPorts": [],
+@@ -22,6 +26,17 @@
+ 	// "customizations": {},
+ 
+ 	// Uncomment to connect as an existing user other than the container default. More info: https://aka.ms/dev-containers-non-root.
+-	"remoteUser": "vscode"
++	"remoteUser": "vscode",
++	"customizations": {
++		"vscode": {
++			"extensions": [
++				"hashicorp.terraform",
++				"ms-azuretools.vscode-docker",
++				"GitHub.copilot",
++				"GitHub.copilot-chat",
++				"GitHub.vscode-pull-request-github"
++			]
++		}
++	}
+ 	// "runArgs": ["--env-file","../.env"]
+ }
+diff --git a/.devcontainer/testDockerfile b/.devcontainer/testDockerfile
+deleted file mode 100644
+index a56cd8b..0000000
+--- a/.devcontainer/testDockerfile
++++ /dev/null
+@@ -1,10 +0,0 @@
+-FROM bitnami/minideb:latest
+-
+-#installing packages needed for our project, terraform and aws
+-
+-RUN install_packages python3 ansible-core unzip 
+-RUN wget -O /tmp/terraform.zip https://releases.hashicorp.com/terraform/1.9.6/terraform_1.9.6_linux_386.zip  && unzip /tmp/terraform.zip -d /tmp/ && mv /tmp/terraform /usr/bin && rm -f /tmp/terraform.zip
+-RUN wget -O /tmp/awscliv2.zip  "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" && unzip /tmp/awscliv2.zip -d /tmp/ && /tmp/aws/install && rm -f /tmp/awscliv2.zip
+-RUN useradd -m -s /bin/bash vscode 
+-RUN usermod -aG sudo vscode
+-ENV LC_ALL="C.UTF-8"
+\ No newline at end of file
+diff --git a/README.md b/README.md
+index 0dd2258..60e2280 100644
+--- a/README.md
++++ b/README.md
+@@ -38,46 +38,51 @@ Ansible core 2.16.0 is required to support the yum module.
+ | Name | Version |
+ |------|---------|
+ | <a name="provider_aws"></a> [aws](#provider\_aws) | 5.59.0 |
+-| <a name="provider_http"></a> [http](#provider\_http) | 3.4.4 |
+-| <a name="provider_local"></a> [local](#provider\_local) | 2.5.1 |
+-| <a name="provider_null"></a> [null](#provider\_null) | 3.2.2 |
++| <a name="provider_http"></a> [http](#provider\_http) | 3.4.5 |
++| <a name="provider_local"></a> [local](#provider\_local) | 2.5.2 |
++| <a name="provider_null"></a> [null](#provider\_null) | 3.2.3 |
+ | <a name="provider_tls"></a> [tls](#provider\_tls) | 4.0.6 |
+ 
+ ## Modules
+ 
+-No modules.
++| Name | Source | Version |
++|------|--------|---------|
++| <a name="module_master_instance"></a> [master\_instance](#module\_master\_instance) | ./modules/ec2_instance | n/a |
++| <a name="module_security_group"></a> [security\_group](#module\_security\_group) | ./modules/security_group | n/a |
++| <a name="module_worker_instance"></a> [worker\_instance](#module\_worker\_instance) | ./modules/ec2_instance | n/a |
+ 
+ ## Resources
+ 
+ | Name | Type |
+ |------|------|
+-| [aws_instance.Master_Node](https://registry.terraform.io/providers/hashicorp/aws/5.59.0/docs/resources/instance) | resource |
+-| [aws_instance.Worker_Node](https://registry.terraform.io/providers/hashicorp/aws/5.59.0/docs/resources/instance) | resource |
+ | [aws_key_pair.key](https://registry.terraform.io/providers/hashicorp/aws/5.59.0/docs/resources/key_pair) | resource |
+-| [aws_security_group.network-security-group](https://registry.terraform.io/providers/hashicorp/aws/5.59.0/docs/resources/security_group) | resource |
++| [aws_vpc.main](https://registry.terraform.io/providers/hashicorp/aws/5.59.0/docs/resources/vpc) | resource |
+ | [local_file.inventory](https://registry.terraform.io/providers/hashicorp/local/latest/docs/resources/file) | resource |
+ | [local_file.priv_key](https://registry.terraform.io/providers/hashicorp/local/latest/docs/resources/file) | resource |
+ | [null_resource.ansible_runner](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
+ | [tls_private_key.priv_key](https://registry.terraform.io/providers/hashicorp/tls/latest/docs/resources/private_key) | resource |
++| [aws_ami.latest_amazon_linux](https://registry.terraform.io/providers/hashicorp/aws/5.59.0/docs/data-sources/ami) | data source |
+ | [http_http.my_public_ip](https://registry.terraform.io/providers/hashicorp/http/latest/docs/data-sources/http) | data source |
+ 
+ ## Inputs
+ 
+ | Name | Description | Type | Default | Required |
+ |------|-------------|------|---------|:--------:|
+-| <a name="input_Master-ami"></a> [Master-ami](#input\_Master-ami) | AWS ami used for master instance, you can updated to the latest ami | `string` | `"ami-00f251754ac5da7f0"` | no |
+ | <a name="input_Master-instance-type"></a> [Master-instance-type](#input\_Master-instance-type) | AWS instance type for the master node, the defualt will be t2.medium as it's the least for the kubernetes | `string` | `"t2.medium"` | no |
+-| <a name="input_Worker-ami"></a> [Worker-ami](#input\_Worker-ami) | AWS ami used for Worker instance, you can updated to the latest ami | `string` | `"ami-00f251754ac5da7f0"` | no |
+-| <a name="input_Worker-count"></a> [Worker-count](#input\_Worker-count) | Worker nodes count to be deployed | `number` | `"1"` | no |
++| <a name="input_Worker-count"></a> [Worker-count](#input\_Worker-count) | Worker nodes count to be deployed | `number` | `2` | no |
+ | <a name="input_Worker-instance-type"></a> [Worker-instance-type](#input\_Worker-instance-type) | AWS instance type for the master node, the defualt will be t2.medium as it's the least for the kubernetes | `string` | `"t2.medium"` | no |
+ | <a name="input_key-name"></a> [key-name](#input\_key-name) | Your SSH-Key name | `string` | `"my-key"` | no |
++| <a name="input_master_root_block_device"></a> [master\_root\_block\_device](#input\_master\_root\_block\_device) | The root block device configuration for the master instance | <pre>object({<br/>    volume_type           = string<br/>    volume_size           = number<br/>    delete_on_termination = bool<br/>  })</pre> | <pre>{<br/>  "delete_on_termination": true,<br/>  "volume_size": 8,<br/>  "volume_type": "gp2"<br/>}</pre> | no |
+ | <a name="input_network-security-group-name"></a> [network-security-group-name](#input\_network-security-group-name) | Your Network security group name | `string` | `"nsg-inbound"` | no |
++| <a name="input_region"></a> [region](#input\_region) | The AWS region to deploy resources | `string` | `"us-east-1"` | no |
++| <a name="input_worker_root_block_device"></a> [worker\_root\_block\_device](#input\_worker\_root\_block\_device) | The root block device configuration for the worker instances | <pre>object({<br/>    volume_type           = string<br/>    volume_size           = number<br/>    delete_on_termination = bool<br/>  })</pre> | <pre>{<br/>  "delete_on_termination": true,<br/>  "volume_size": 8,<br/>  "volume_type": "gp2"<br/>}</pre> | no |
+ 
+ ## Outputs
+ 
+ | Name | Description |
+ |------|-------------|
+-| <a name="output_ec2_Master_ip"></a> [ec2\_Master\_ip](#output\_ec2\_Master\_ip) | Your Control-plane ip |
+-| <a name="output_ec2_Worker_ip"></a> [ec2\_Worker\_ip](#output\_ec2\_Worker\_ip) | All your worker nodes ips |
+-| <a name="output_your_public_ip"></a> [your\_public\_ip](#output\_your\_public\_ip) | Your current public ip |
+-<!-- END_TF_DOCS -->
++| <a name="output_ec2_Master_ip"></a> [ec2\_Master\_ip](#output\_ec2\_Master\_ip) | Your Control-plane IP |
++| <a name="output_ec2_Worker_ip"></a> [ec2\_Worker\_ip](#output\_ec2\_Worker\_ip) | All your worker nodes IPs |
++| <a name="output_vpc_id"></a> [vpc\_id](#output\_vpc\_id) | The ID of the VPC |
++| <a name="output_your_public_ip"></a> [your\_public\_ip](#output\_your\_public\_ip) | Your current public IP |
++<!-- END_TF_DOCS -->
+\ No newline at end of file
+diff --git a/ansible/Prepare.yml b/ansible/Prepare.yml
+index bd5187b..2cb520c 100644
+--- a/ansible/Prepare.yml
++++ b/ansible/Prepare.yml
+@@ -3,152 +3,12 @@
+   become: true
+   gather_facts: false
+ 
+-  tasks:
+-
+-   - name: Check SSH connection for all instances
+-     ansible.builtin.wait_for_connection:
+-      timeout: 300
+-
+-   - name: Set hostname for all instances
+-     ansible.builtin.hostname:
+-      name: "{{ inventory_hostname }}"
+-
+-
+-   - name: Gather facts
+-     ansible.builtin.setup:
+-
+-   - name: Update all packages
+-     ansible.builtin.yum:
+-      name: '*'
+-      state: latest
+-
+-   - name: Install docker
+-     ansible.builtin.yum:
+-      name: docker
+-      state: latest
+-
+-   - name: Enable and start docker
+-     ansible.builtin.service:
+-      name: docker
+-      state: started
+-      enabled: true
+-
+-   - name: SELINUX setenforce to 0
+-     ansible.builtin.command: setenforce 0
+-     register: setenforce
+-     ignore_errors: true
+-     failed_when: setenforce.rc != 0 and setenforce.rc != 1
+-
+-  #  - ansible.builtin.debug:
+-  #     msg: "{{ setenforce }}"
+-
+-   - name: Changing SELINUX to permissive
+-     ansible.builtin.lineinfile:
+-      path: /etc/selinux/config
+-      regexp: '^SELINUX='
+-      line: SELINUX=permissive
+-
+-   - name: Add kubernetes repo
+-     ansible.builtin.blockinfile:
+-      path: /etc/yum.repos.d/kubernetes.repo
+-      create: true
+-      mode: "755"
+-      block: |
+-       [kubernetes]
+-       name=Kubernetes
+-       baseurl=https://pkgs.k8s.io/core:/stable:/v1.30/rpm/
+-       enabled=1
+-       gpgcheck=1
+-       gpgkey=https://pkgs.k8s.io/core:/stable:/v1.30/rpm/repodata/repomd.xml.key
+-       exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+-
+-   - name: Install kubeadm and kubelet
+-     ansible.builtin.yum:
+-      name: "{{ packages }}"
+-      disable_excludes: 'kubernetes'
+-      disable_plugin: priorities
+-     vars:
+-      packages:
+-       - "kubelet"
+-       - "kubeadm"
+-       - "kubectl"
+-
+-   - name: Enable and start kubelet
+-     ansible.builtin.service:
+-      name: kubelet
+-      enabled: true
+-
+-   - name: Initiate kubeadm
+-     ansible.builtin.command: kubeadm init --pod-network-cidr=192.168.0.0/16
+-     register: my_output_kubeadm
+-     args:
+-      chdir: /home/ec2-user/
+-      creates: cluster_initialized.txt
+-     ignore_errors: true
+-     when: inventory_hostname in groups["Control_Plane"]
+-     failed_when: my_output_kubeadm.rc != 0 and my_output_kubeadm.rc != 1
+-     changed_when: "'ERROR FileAvailable' not in my_output_kubeadm.stderr"
+-
+-  #  - ansible.builtin.debug:
+-  #     msg: "{{ my_output_kubeadm }}"
+-  #    when: inventory_hostname in groups["Control_Plane"]
+-
+-   - name: Create .kube directory
+-     ansible.builtin.file:
+-      path: /home/ec2-user/.kube
+-      state: directory
+-      mode: "755"
+-      owner: ec2-user
+-      group: ec2-user
+-     when: inventory_hostname in groups["Control_Plane"]
+-
+-   - name: Copy config files
+-     ansible.builtin.copy:
+-      src: /etc/kubernetes/admin.conf
+-      dest: /home/ec2-user/.kube/config
+-      remote_src: true
+-      mode: "755"
+-      owner: ec2-user
+-     when: inventory_hostname in groups["Control_Plane"]
+-
+-   - name: Apply calico
+-     ansible.builtin.command: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/calico.yaml
+-     become_user: ec2-user
+-     register: my_output_kubectl
+-     ignore_errors: true
+-     args:
+-      chdir: $HOME
+-     when: inventory_hostname in groups["Control_Plane"]
+-     changed_when: "'unchanged' is not in my_output_kubectl.stdout"
+-
+-  #  - ansible.builtin.debug:
+-  #     msg: "{{ my_output_kubectl }}"
+-  #    when: inventory_hostname in groups["Control_Plane"]
+-
+-
+-   - name: Get the token for joining the worker nodes
+-     shell: kubeadm token create  --print-join-command
+-     register: kubernetes_join_command
+-     when: inventory_hostname in groups["Control_Plane"]
+-     changed_when: kubernetes_join_command.rc != 0
+-
+-   - ansible.builtin.debug:
+-      msg: "{{ kubernetes_join_command.stdout }}"
+-     when: inventory_hostname in groups["Control_Plane"]
+-
+-   - name: Join the Worker nodes to the cluster.
+-     command: "{{ hostvars[groups['Control_Plane'][0]].kubernetes_join_command.stdout_lines[0] }}"
+-     register: joined_or_not
+-     when: inventory_hostname in groups["Workers"]
+-     failed_when: joined_or_not.rc != 0 and joined_or_not.rc != 1
+-     changed_when: "'/etc/kubernetes/kubelet.conf already exists' not in joined_or_not.stderr"
+-
+-   - name: Add ec2-user to docker group
+-     ansible.builtin.user:
+-      user: ec2-user
+-      groups: docker
+-      append: true
+-
+-  #  - ansible.builtin.debug:
+-  #     msg: "{{ joined_or_not }}"
+-  #    when: inventory_hostname in groups["Workers"]
++  roles:
++    - role: common
++      tags: always
++    - role: selinux
++      tags: selinux
++    - role: docker
++      tags: docker
++    - role: kubernetes
++      tags: kubernetes
+diff --git a/install_kube.sh b/install_kube.sh
+deleted file mode 100644
+index a344e37..0000000
+--- a/install_kube.sh
++++ /dev/null
+@@ -1,25 +0,0 @@
+-#! /bin/bash
+-sudo hostnamectl set-hostname control-plane
+-sudo yum update -y
+-sudo yum install docker -y
+-sudo systemctl enable docker
+-sudo systemctl start docker
+-sudo setenforce 0
+-sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+-sudo cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+-[kubernetes]
+-name=Kubernetes
+-baseurl=https://pkgs.k8s.io/core:/stable:/v1.30/rpm/
+-enabled=1
+-gpgcheck=1
+-gpgkey=https://pkgs.k8s.io/core:/stable:/v1.30/rpm/repodata/repomd.xml.key
+-exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+-EOF
+-sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes --disableplugin=priorities
+-sudo systemctl enable --now kubelet
+-sudo kubeadm init --pod-network-cidr=192.168.0.0/16
+-mkdir -p /home/ec2-user/.kube
+-sudo cp -i /etc/kubernetes/admin.conf /home/ec2-user/.kube/config
+-sudo chown ec2-user:ec2-user /home/ec2-user/.kube/config
+-curl https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/calico.yaml -O
+-kubectl apply -f calico.yaml
+\ No newline at end of file
+diff --git a/install_kube_Worker.sh b/install_kube_Worker.sh
+deleted file mode 100644
+index ece4f45..0000000
+--- a/install_kube_Worker.sh
++++ /dev/null
+@@ -1,19 +0,0 @@
+-#! /bin/bash
+-sudo hostnamectl set-hostname worker1
+-sudo yum update -y
+-sudo yum install docker -y
+-sudo systemctl enable docker
+-sudo systemctl start docker
+-sudo setenforce 0
+-sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+-sudo cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+-[kubernetes]
+-name=Kubernetes
+-baseurl=https://pkgs.k8s.io/core:/stable:/v1.30/rpm/
+-enabled=1
+-gpgcheck=1
+-gpgkey=https://pkgs.k8s.io/core:/stable:/v1.30/rpm/repodata/repomd.xml.key
+-exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+-EOF
+-sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes --disableplugin=priorities
+-sudo systemctl enable --now kubelet
+diff --git a/main.tf b/main.tf
+index 00a21fe..7a3395e 100644
+--- a/main.tf
++++ b/main.tf
+@@ -1,3 +1,23 @@
++locals {
++  ami_filter_name = "amzn2-ami-hvm-*-x86_64-gp2"
++  ami_owner       = "amazon"
++}
++
++data "aws_ami" "latest_amazon_linux" {
++  most_recent = true
++  owners      = [local.ami_owner]
++
++  filter {
++    name   = "name"
++    values = [local.ami_filter_name]
++  }
++
++  filter {
++    name   = "state"
++    values = ["available"]
++  }
++}
++
+ resource "tls_private_key" "priv_key" {
+   algorithm = "RSA"
+   rsa_bits  = 2048
+@@ -7,8 +27,6 @@ resource "aws_key_pair" "key" {
+   depends_on = [tls_private_key.priv_key]
+   key_name   = var.key-name
+   public_key = tls_private_key.priv_key.public_key_openssh
+-
+-
+ }
+ 
+ resource "local_file" "priv_key" {
+@@ -16,89 +34,72 @@ resource "local_file" "priv_key" {
+   filename        = "${path.module}/${var.key-name}.pem"
+   content         = tls_private_key.priv_key.private_key_pem
+   file_permission = 0600
+-
+ }
+ 
+ data "http" "my_public_ip" {
+   url = "http://ipv4.icanhazip.com"
+ }
+ 
+-# Creating a security group to restrict/allow inbound connectivity
+-resource "aws_security_group" "network-security-group" {
++resource "aws_vpc" "main" {
++  cidr_block = "10.0.0.0/16"
++  enable_dns_support = true
++  enable_dns_hostnames = true
++  tags = {
++    Name = "main-vpc"
++  }
++}
++
++module "security_group" {
++  source      = "./modules/security_group"
+   name        = var.network-security-group-name
+   description = "Allow TLS inbound traffic"
+-
+-  ingress {
+-    description = "SSH"
+-    from_port   = 22
+-    to_port     = 22
+-    protocol    = "tcp"
+-    cidr_blocks = ["${chomp(data.http.my_public_ip.response_body)}/32"]
+-  }
+-  ingress {
+-    description = "internal security group"
+-    self        = true
+-    from_port   = "0"
+-    to_port     = "0"
+-    protocol    = "-1"
+-  }
+-  egress {
+-    description = "internet"
+-    from_port   = "0"
+-    to_port     = "0"
+-    protocol    = "-1"
+-    cidr_blocks = ["0.0.0.0/0"]
+-  }
+-  # Not recommended to add "0.0.0.0/0" instead we need to be more specific with the IP ranges to allow connectivity from.
++  my_public_ip = "${chomp(data.http.my_public_ip.response_body)}/32"
+   tags = {
+     Name = "nsg-inbound"
+   }
+-
+ }
+ 
+-resource "aws_instance" "Master_Node" {
+-  ami                    = var.Master-ami
+-  instance_type          = var.Master-instance-type
+-  key_name               = aws_key_pair.key.key_name
+-  vpc_security_group_ids = [aws_security_group.network-security-group.id]
+-
++module "master_instance" {
++  source            = "./modules/ec2_instance"
++  ami               = data.aws_ami.latest_amazon_linux.id
++  instance_type     = var.Master-instance-type
++  key_name          = aws_key_pair.key.key_name
++  security_group_ids = [module.security_group.id]
++  root_block_device = var.master_root_block_device
+   tags = {
+     Name = "control-plane"
+   }
+-
+ }
+ 
+-resource "aws_instance" "Worker_Node" {
+-  count                  = var.Worker-count
+-  ami                    = var.Worker-ami
+-  instance_type          = var.Worker-instance-type
+-  key_name               = aws_key_pair.key.key_name
+-  vpc_security_group_ids = [aws_security_group.network-security-group.id]
+-
++module "worker_instance" {
++  source            = "./modules/ec2_instance"
++  ami               = data.aws_ami.latest_amazon_linux.id
++  instance_type     = var.Worker-instance-type
++  key_name          = aws_key_pair.key.key_name
++  security_group_ids = [module.security_group.id]
++  instance_count    = var.Worker-count
++  root_block_device = var.worker_root_block_device
+   tags = {
+-    Name = "worker${count.index}"
++    Name = "worker"
+   }
+-
+ }
+ 
+-
+ resource "local_file" "inventory" {
+-  depends_on = [aws_instance.Master_Node, aws_instance.Worker_Node]
++  depends_on = [module.master_instance, module.worker_instance]
+   content = templatefile("${path.module}/ansible/inventory.tpl",
+     {
+       master = {
+-        "${aws_instance.Master_Node.tags.Name}" = "${aws_instance.Master_Node.public_ip}"
+-      }
+-      worker = {
+-        for instance in aws_instance.Worker_Node :
+-        instance.tags.Name => instance.public_ip
++        "control-plane" = module.master_instance.public_ip[0]
+       }
++      worker = zipmap(
++        [for i in range(length(module.worker_instance.public_ip)) : "worker${i}"],
++        module.worker_instance.public_ip
++      )
+     }
+   )
+   filename = "${path.module}/ansible/inventory.yaml"
+ }
+ 
+-
+ resource "null_resource" "ansible_runner" {
+   depends_on = [local_file.inventory]
+   triggers = {
+diff --git a/outputs.tf b/outputs.tf
+index b558dc7..1396ace 100644
+--- a/outputs.tf
++++ b/outputs.tf
+@@ -1,16 +1,20 @@
+ output "your_public_ip" {
+-  description = "Your current public ip"
+-  value       = "${chomp(data.http.my_public_ip.response_body)}/32"
++  description = "Your current public IP"
++  value       = chomp(data.http.my_public_ip.response_body)
+ }
+ 
+-
+ output "ec2_Master_ip" {
+-  description = "Your Control-plane ip"
+-  value       = aws_instance.Master_Node.*.public_ip
++  description = "Your Control-plane IP"
++  value       = module.master_instance.public_ip[0]
+ }
+ 
+ output "ec2_Worker_ip" {
+-  description = "All your worker nodes ips"
+-  value       = aws_instance.Worker_Node.*.public_ip
++  description = "All your worker nodes IPs"
++  value       = module.worker_instance.public_ip
++}
++
++output "vpc_id" {
++  description = "The ID of the VPC"
++  value       = aws_vpc.main.id
+ }
+ 
+diff --git a/provider.tf b/provider.tf
+index a540e37..df3c9b9 100644
+--- a/provider.tf
++++ b/provider.tf
+@@ -7,6 +7,4 @@ terraform {
+   }
+ }
+ 
+-provider "aws" {
+-  region = "us-east-1"
+-}
+\ No newline at end of file
++// ...add other provider configurations as needed...
+\ No newline at end of file
+diff --git a/terraform.tfvars b/terraform.tfvars
+index c16211b..0bd691b 100644
+--- a/terraform.tfvars
++++ b/terraform.tfvars
+@@ -1,7 +1,20 @@
+ key-name                    = "my-key"
+ network-security-group-name = "nsg-inbound"
+-Master-ami                  = "ami-00f251754ac5da7f0" #old ami ami-0a5c3558529277641 # You can find this info in AMI Catalog on AWS management console for the specific image you want to create
+ Master-instance-type        = "t2.medium"
+-Worker-ami                  = "ami-00f251754ac5da7f0" #old ami ami-0a5c3558529277641 # You can find this info in AMI Catalog on AWS management console for the specific image you want to create
+ Worker-instance-type        = "t2.medium"
+-Worker-count                = 1
+\ No newline at end of file
++Worker-count                = 2
++region                      = "us-east-1"
++
++master_root_block_device = {
++  volume_type           = "gp2"
++  volume_size           = 20
++  delete_on_termination = true
++}
++
++worker_root_block_device = {
++  volume_type           = "gp2"
++  volume_size           = 20
++  delete_on_termination = true
++}
++
++// ...add other variable values as needed...
+\ No newline at end of file
+diff --git a/variables.tf b/variables.tf
+index 0c11689..c23561c 100644
+--- a/variables.tf
++++ b/variables.tf
+@@ -10,24 +10,10 @@ variable "network-security-group-name" {
+   type        = string
+ }
+ 
+-variable "Master-ami" {
+-  description = "AWS ami used for master instance, you can updated to the latest ami"
+-  default     = "ami-00f251754ac5da7f0"
+-  type        = string
+-
+-}
+-
+ variable "Master-instance-type" {
+   description = "AWS instance type for the master node, the defualt will be t2.medium as it's the least for the kubernetes "
+   default     = "t2.medium"
+   type        = string
+-
+-}
+-
+-variable "Worker-ami" {
+-  description = "AWS ami used for Worker instance, you can updated to the latest ami"
+-  default     = "ami-00f251754ac5da7f0"
+-  type        = string
+ }
+ 
+ variable "Worker-instance-type" {
+@@ -39,5 +25,39 @@ variable "Worker-instance-type" {
+ variable "Worker-count" {
+   description = "Worker nodes count to be deployed"
+   type        = number
+-  default     = "1"
++  default     = 2
++}
++
++variable "region" {
++  description = "The AWS region to deploy resources"
++  type        = string
++  default     = "us-east-1"
++}
++
++variable "master_root_block_device" {
++  description = "The root block device configuration for the master instance"
++  type = object({
++    volume_type           = string
++    volume_size           = number
++    delete_on_termination = bool
++  })
++  default = {
++    volume_type           = "gp2"
++    volume_size           = 8
++    delete_on_termination = true
++  }
++}
++
++variable "worker_root_block_device" {
++  description = "The root block device configuration for the worker instances"
++  type = object({
++    volume_type           = string
++    volume_size           = number
++    delete_on_termination = bool
++  })
++  default = {
++    volume_type           = "gp2"
++    volume_size           = 8
++    delete_on_termination = true
++  }
+ }
+\ No newline at end of file

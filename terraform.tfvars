@@ -1,7 +1,20 @@
 key-name                    = "my-key"
 network-security-group-name = "nsg-inbound"
-Master-ami                  = "ami-00f251754ac5da7f0" #old ami ami-0a5c3558529277641 # You can find this info in AMI Catalog on AWS management console for the specific image you want to create
 Master-instance-type        = "t2.medium"
-Worker-ami                  = "ami-00f251754ac5da7f0" #old ami ami-0a5c3558529277641 # You can find this info in AMI Catalog on AWS management console for the specific image you want to create
 Worker-instance-type        = "t2.medium"
-Worker-count                = 1
+Worker-count                = 2
+region                      = "us-east-1"
+
+master_root_block_device = {
+  volume_type           = "gp2"
+  volume_size           = 20
+  delete_on_termination = true
+}
+
+worker_root_block_device = {
+  volume_type           = "gp2"
+  volume_size           = 20
+  delete_on_termination = true
+}
+
+// ...add other variable values as needed...
