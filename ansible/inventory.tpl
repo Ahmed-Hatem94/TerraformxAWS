@@ -14,3 +14,12 @@ Workers:
       ansible_host: ${config_value}
       ansible_user: ec2-user
 %{ endfor ~}
+
+Jenkins:
+  hosts:
+%{ for config_key, config_value in Jenkins ~}
+    ${config_key}:
+      ansible_host: ${config_value}
+      ansible_user: ec2-user
+%{ endfor ~}
+

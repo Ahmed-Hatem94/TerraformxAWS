@@ -10,6 +10,13 @@ resource "aws_security_group" "security_group" {
     cidr_blocks = [var.my_public_ip]
   }
   ingress {
+    description = "Jenkins Port"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = [var.my_public_ip]
+  }
+  ingress {
     description = "internal security group"
     self        = true
     from_port   = 0

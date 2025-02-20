@@ -12,6 +12,10 @@ output "ec2_Worker_ip" {
   description = "All your worker nodes IPs"
   value       = module.worker_instance.public_ip
 }
+output "ec2_Jenkins_ip" {
+  description = "All your worker nodes IPs"
+  value       = module.Jenkins_instance.public_ip
+}
 
 output "vpc_id" {
   description = "The ID of the VPC"

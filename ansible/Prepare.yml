@@ -10,5 +10,10 @@
       tags: selinux
     - role: docker
       tags: docker
+      when: inventory_hostname in groups["Control_Plane"] + groups["Workers"]
     - role: kubernetes
       tags: kubernetes
+      when: inventory_hostname in groups["Control_Plane"] + groups["Workers"]
+    - role: Jenkins
+      tags: jenkins
+      when: inventory_hostname in groups["Jenkins"]

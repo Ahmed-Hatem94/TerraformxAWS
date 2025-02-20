@@ -47,6 +47,7 @@ Ansible core 2.16.0 is required to support the yum module.
 
 | Name | Source | Version |
 |------|--------|---------|
+| <a name="module_Jenkins_instance"></a> [Jenkins\_instance](#module\_Jenkins\_instance) | ./modules/ec2_instance | n/a |
 | <a name="module_master_instance"></a> [master\_instance](#module\_master\_instance) | ./modules/ec2_instance | n/a |
 | <a name="module_security_group"></a> [security\_group](#module\_security\_group) | ./modules/security_group | n/a |
 | <a name="module_worker_instance"></a> [worker\_instance](#module\_worker\_instance) | ./modules/ec2_instance | n/a |
@@ -68,9 +69,11 @@ Ansible core 2.16.0 is required to support the yum module.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_Jenkins-instance-type"></a> [Jenkins-instance-type](#input\_Jenkins-instance-type) | AWS instance type for the Jenkins node, the defualt will be t2.medium as it's the least for the kubernetes | `string` | `"t2.micro"` | no |
+| <a name="input_Jenkins_root_block_device"></a> [Jenkins\_root\_block\_device](#input\_Jenkins\_root\_block\_device) | The root block device configuration for the worker instances | <pre>object({<br/>    volume_type           = string<br/>    volume_size           = number<br/>    delete_on_termination = bool<br/>  })</pre> | <pre>{<br/>  "delete_on_termination": true,<br/>  "volume_size": 8,<br/>  "volume_type": "gp2"<br/>}</pre> | no |
 | <a name="input_Master-instance-type"></a> [Master-instance-type](#input\_Master-instance-type) | AWS instance type for the master node, the defualt will be t2.medium as it's the least for the kubernetes | `string` | `"t2.medium"` | no |
 | <a name="input_Worker-count"></a> [Worker-count](#input\_Worker-count) | Worker nodes count to be deployed | `number` | `2` | no |
-| <a name="input_Worker-instance-type"></a> [Worker-instance-type](#input\_Worker-instance-type) | AWS instance type for the master node, the defualt will be t2.medium as it's the least for the kubernetes | `string` | `"t2.medium"` | no |
+| <a name="input_Worker-instance-type"></a> [Worker-instance-type](#input\_Worker-instance-type) | AWS instance type for the Worker node, the defualt will be t2.medium as it's the least for the kubernetes | `string` | `"t2.medium"` | no |
 | <a name="input_key-name"></a> [key-name](#input\_key-name) | Your SSH-Key name | `string` | `"my-key"` | no |
 | <a name="input_master_root_block_device"></a> [master\_root\_block\_device](#input\_master\_root\_block\_device) | The root block device configuration for the master instance | <pre>object({<br/>    volume_type           = string<br/>    volume_size           = number<br/>    delete_on_termination = bool<br/>  })</pre> | <pre>{<br/>  "delete_on_termination": true,<br/>  "volume_size": 8,<br/>  "volume_type": "gp2"<br/>}</pre> | no |
 | <a name="input_network-security-group-name"></a> [network-security-group-name](#input\_network-security-group-name) | Your Network security group name | `string` | `"nsg-inbound"` | no |
@@ -81,6 +84,7 @@ Ansible core 2.16.0 is required to support the yum module.
 
 | Name | Description |
 |------|-------------|
+| <a name="output_ec2_Jenkins_ip"></a> [ec2\_Jenkins\_ip](#output\_ec2\_Jenkins\_ip) | All your worker nodes IPs |
 | <a name="output_ec2_Master_ip"></a> [ec2\_Master\_ip](#output\_ec2\_Master\_ip) | Your Control-plane IP |
 | <a name="output_ec2_Worker_ip"></a> [ec2\_Worker\_ip](#output\_ec2\_Worker\_ip) | All your worker nodes IPs |
 | <a name="output_vpc_id"></a> [vpc\_id](#output\_vpc\_id) | The ID of the VPC |

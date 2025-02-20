@@ -1,0 +1,47 @@
+
+- name: add Jenkins repository
+  ansible.builtin.yum_repository:
+    name: jenkins
+    description: Jenkins
+    baseurl: http://pkg.jenkins.io/redhat-stable
+    gpgcheck: yes
+    gpgkey: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+    enabled: yes
+
+
+- name: install dependencies for Jenkins
+  vars:
+   packages:
+    - "java-17-amazon-corretto"
+    - "fontconfig"
+  ansible.builtin.yum:
+    name: "{{ packages }}"
+    disable_excludes: 'jenkins' 
+    state: present
+
+- name: Install Jenkins
+  ansible.builtin.yum:
+    name: "jenkins"
+    state: present
+
+- name: Enable and start Jenkins
+  ansible.builtin.service:
+    name: jenkins
+    enabled: true
+    state: started
+
+- name: Wait for Jenkins to start
+  ansible.builtin.wait_for:
+    port: 8080
+    delay: 10
+    timeout: 60
+    state: started
+
+- name: Get Jenkins admin password
+  ansible.builtin.shell: "cat /var/lib/jenkins/secrets/initialAdminPassword"
+  register: jenkins_password
+
+- name: Print Jenkins admin password
+  ansible.builtin.debug:
+    msg: "Jenkins admin password: {{ jenkins_password.stdout }}"
+

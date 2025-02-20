@@ -41,8 +41,8 @@ data "http" "my_public_ip" {
 }
 
 resource "aws_vpc" "main" {
-  cidr_block = "10.0.0.0/16"
-  enable_dns_support = true
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_support   = true
   enable_dns_hostnames = true
   tags = {
     Name = "main-vpc"
@@ -50,9 +50,9 @@ resource "aws_vpc" "main" {
 }
 
 module "security_group" {
-  source      = "./modules/security_group"
-  name        = var.network-security-group-name
-  description = "Allow TLS inbound traffic"
+  source       = "./modules/security_group"
+  name         = var.network-security-group-name
+  description  = "Allow TLS inbound traffic"
   my_public_ip = "${chomp(data.http.my_public_ip.response_body)}/32"
   tags = {
     Name = "nsg-inbound"
@@ -60,36 +60,50 @@ module "security_group" {
 }
 
 module "master_instance" {
-  source            = "./modules/ec2_instance"
-  ami               = data.aws_ami.latest_amazon_linux.id
-  instance_type     = var.Master-instance-type
-  key_name          = aws_key_pair.key.key_name
+  source             = "./modules/ec2_instance"
+  ami                = data.aws_ami.latest_amazon_linux.id
+  instance_type      = var.Master-instance-type
+  key_name           = aws_key_pair.key.key_name
   security_group_ids = [module.security_group.id]
-  root_block_device = var.master_root_block_device
+  root_block_device  = var.master_root_block_device
   tags = {
     Name = "control-plane"
   }
 }
 
 module "worker_instance" {
-  source            = "./modules/ec2_instance"
-  ami               = data.aws_ami.latest_amazon_linux.id
-  instance_type     = var.Worker-instance-type
-  key_name          = aws_key_pair.key.key_name
+  source             = "./modules/ec2_instance"
+  ami                = data.aws_ami.latest_amazon_linux.id
+  instance_type      = var.Worker-instance-type
+  key_name           = aws_key_pair.key.key_name
   security_group_ids = [module.security_group.id]
-  instance_count    = var.Worker-count
-  root_block_device = var.worker_root_block_device
+  instance_count     = var.Worker-count
+  root_block_device  = var.worker_root_block_device
   tags = {
     Name = "worker"
   }
 }
+module "Jenkins_instance" {
+  source             = "./modules/ec2_instance"
+  ami                = data.aws_ami.latest_amazon_linux.id
+  instance_type      = var.Jenkins-instance-type
+  key_name           = aws_key_pair.key.key_name
+  security_group_ids = [module.security_group.id]
+  root_block_device  = var.Jenkins_root_block_device
+  tags = {
+    Name = "Jenkins"
+  }
+}
 
 resource "local_file" "inventory" {
-  depends_on = [module.master_instance, module.worker_instance]
+  depends_on = [module.master_instance, module.worker_instance, module.Jenkins_instance]
   content = templatefile("${path.module}/ansible/inventory.tpl",
     {
       master = {
         "control-plane" = module.master_instance.public_ip[0]
+      }
+      Jenkins = {
+        "Jenkins" = module.Jenkins_instance.public_ip[0]
       }
       worker = zipmap(
         [for i in range(length(module.worker_instance.public_ip)) : "worker${i}"],
