@@ -13,7 +13,7 @@ output "ec2_Worker_ip" {
   value       = module.worker_instance.public_ip
 }
 output "ec2_Jenkins_ip" {
-  description = "All your worker nodes IPs"
+  description = "Jenkins server IP"
   value       = module.Jenkins_instance.public_ip
 }
 

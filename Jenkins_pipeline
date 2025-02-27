@@ -1,0 +1,41 @@
+pipeline {
+  agent any 
+  
+  environment {
+    KUBECTL_VERSION = 'v1.20.5'
+    KUBE_SERVER = 'https://172.31.23.220:6443'
+  }
+  
+  stages {
+    stage('Setup kubectl') {
+      steps {
+        sh '''
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+          chmod u+x ./kubectl
+        '''
+      }
+    }
+    
+    stage('Deploy to Kubernetes') {
+      steps {
+        withKubeCredentials(kubectlCredentials: [
+          [
+            caCertificate: '', 
+            clusterName: 'demo1', 
+            contextName: '', 
+            credentialsId: 'Y_SECRET', 
+            namespace: 'default', 
+            serverUrl: "${KUBE_SERVER}"
+          ]
+        ]) {
+          sh '''
+            ./kubectl get nodes
+            ./kubectl create deployment sonar --image=sonarqube:lts-community --port=9000
+            ./kubectl create deployment nexus --image=sonatype/nexus3:latest --port=8081
+
+          '''
+        }
+      }
+    }
+  }
+}

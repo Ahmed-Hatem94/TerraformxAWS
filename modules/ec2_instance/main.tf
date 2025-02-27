@@ -11,5 +11,10 @@ resource "aws_instance" "instance" {
     delete_on_termination = var.root_block_device.delete_on_termination
   }
 
-  tags = merge(var.tags, { Name = "${var.tags["Name"]}-${count.index}" })
+  tags = merge(
+    var.tags,
+    {
+      Name = var.instance_count > 1 ? format("%s-%02d", var.name_prefix, count.index + 1) : var.name_prefix
+    }
+  )
 }

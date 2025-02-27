@@ -66,6 +66,7 @@ module "master_instance" {
   key_name           = aws_key_pair.key.key_name
   security_group_ids = [module.security_group.id]
   root_block_device  = var.master_root_block_device
+  name_prefix        = "control-plane"
   tags = {
     Name = "control-plane"
   }
@@ -79,10 +80,12 @@ module "worker_instance" {
   security_group_ids = [module.security_group.id]
   instance_count     = var.Worker-count
   root_block_device  = var.worker_root_block_device
+  name_prefix        = "worker"
   tags = {
     Name = "worker"
   }
 }
+
 module "Jenkins_instance" {
   source             = "./modules/ec2_instance"
   ami                = data.aws_ami.latest_amazon_linux.id
@@ -90,8 +93,9 @@ module "Jenkins_instance" {
   key_name           = aws_key_pair.key.key_name
   security_group_ids = [module.security_group.id]
   root_block_device  = var.Jenkins_root_block_device
+  name_prefix        = "jenkins"
   tags = {
-    Name = "Jenkins"
+    Name = "jenkins"
   }
 }
 
@@ -106,7 +110,7 @@ resource "local_file" "inventory" {
         "Jenkins" = module.Jenkins_instance.public_ip[0]
       }
       worker = zipmap(
-        [for i in range(length(module.worker_instance.public_ip)) : "worker${i}"],
+        [for i in range(1, length(module.worker_instance.public_ip) + 1) : "worker${i}"],
         module.worker_instance.public_ip
       )
     }

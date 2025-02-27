@@ -67,7 +67,7 @@ variable "worker_root_block_device" {
   }
 }
 variable "Jenkins_root_block_device" {
-  description = "The root block device configuration for the worker instances"
+  description = "The root block device configuration for the Jenkins instance"
   type = object({
     volume_type           = string
     volume_size           = number

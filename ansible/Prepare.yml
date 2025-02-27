@@ -17,3 +17,7 @@
     - role: Jenkins
       tags: jenkins
       when: inventory_hostname in groups["Jenkins"]
+    - role: Kube_sa
+      tags: kube_sa
+      when: inventory_hostname in groups["Control_Plane"]
+      become: no

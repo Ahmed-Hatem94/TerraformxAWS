@@ -1,0 +1,52 @@
+- name: Create directory for Kubernetes manifests
+  file:
+    path: "/tmp/jenkins-k8s"
+    state: directory
+    mode: '0755'
+
+- name: Copy Kubernetes manifest files
+  copy:
+    src: "{{ role_path }}/files/{{ item }}"
+    dest: "/tmp/jenkins-k8s/{{ item }}"
+    mode: '0644'
+  with_items:
+    - jenkins-sa.yaml
+    - jenkins-clusterrole.yaml
+    - jenkins-rolebinding.yaml
+    - jenkins-secret.yaml
+
+
+- name: Apply Jenkins service account YAML
+  command:
+    cmd: kubectl apply -f /tmp/jenkins-k8s/jenkins-sa.yaml
+  register: sa_result
+  changed_when: sa_result.rc == 0
+
+- name: Apply Jenkins ClusterRole YAML
+  command:
+    cmd: kubectl apply -f /tmp/jenkins-k8s/jenkins-clusterrole.yaml
+  register: role_result
+  changed_when: role_result.rc == 0
+
+- name: Apply Jenkins ClusterRoleBinding YAML
+  command:
+    cmd: kubectl apply -f /tmp/jenkins-k8s/jenkins-rolebinding.yaml
+  register: binding_result
+  changed_when: binding_result.rc == 0
+
+- name: Apply Jenkins secret YAML
+  command:
+    cmd: kubectl apply -f /tmp/jenkins-k8s/jenkins-secret.yaml
+  register: secret_result
+  changed_when: secret_result.rc == 0
+
+- name: Get Jenkins service account token
+  shell:
+    cmd: kubectl get secrets jenkins-secret -o jsonpath='{.data.token}' | base64 -d
+  register: jenkins_token
+
+- name: Save token to a file
+  copy:
+    content: "{{ jenkins_token.stdout }}"
+    dest: "/tmp/jenkins-token"
+    mode: '0600'

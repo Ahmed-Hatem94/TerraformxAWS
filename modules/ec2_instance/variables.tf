@@ -42,3 +42,8 @@ variable "root_block_device" {
     delete_on_termination = true
   }
 }
+
+variable "name_prefix" {
+  description = "Prefix to use for instance names (e.g., 'control-plane' or 'worker')"
+  type        = string
+}
