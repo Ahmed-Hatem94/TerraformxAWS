@@ -37,7 +37,7 @@ variable "root_block_device" {
     delete_on_termination = bool
   })
   default = {
-    volume_type           = "gp2"
+    volume_type           = "gp3"
     volume_size           = 8
     delete_on_termination = true
   }
@@ -45,5 +45,10 @@ variable "root_block_device" {
 
 variable "name_prefix" {
   description = "Prefix to use for instance names (e.g., 'control-plane' or 'worker')"
+  type        = string
+}
+
+variable "subnet_id" {
+  description = "The subnet ID to launch the instance in"
   type        = string
 }

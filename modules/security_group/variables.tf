@@ -17,3 +17,8 @@ variable "tags" {
   description = "The tags to associate with the security group"
   type        = map(string)
 }
+
+variable "vpc_id" {
+  description = "The VPC ID to create the security group in"
+  type        = string
+}

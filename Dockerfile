@@ -1,29 +1,27 @@
-#using a small debian container
-
+# Using a small debian container
 FROM bitnami/minideb:latest
 
-#installing packages needed for our project, terraform and aws
+# Define build arguments
+ARG TERRAFORM_VERSION=1.9.6
 
-RUN install_packages python3 ansible-core unzip 
-RUN wget -O /tmp/terraform.zip https://releases.hashicorp.com/terraform/1.9.6/terraform_1.9.6_linux_386.zip  && unzip /tmp/terraform.zip -d /tmp/ && mv /tmp/terraform /usr/bin && rm -f /tmp/terraform.zip
-RUN wget -O /tmp/awscliv2.zip  "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" && unzip /tmp/awscliv2.zip -d /tmp/ && /tmp/aws/install && rm -f /tmp/awscliv2.zip
+# Set working directory
+WORKDIR /app
 
-#copying folder files to container
-COPY . /tmp/TerraformxAWS
-WORKDIR /tmp/TerraformxAWS
+# Install packages, Terraform, and AWS CLI in a single layer to minimize size
+RUN install_packages python3 ansible-core unzip wget curl ca-certificates && \
+    wget -O /tmp/terraform.zip "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_$(dpkg --print-architecture).zip" && \
+    unzip /tmp/terraform.zip -d /usr/bin && \
+    rm /tmp/terraform.zip && \
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip" && \
+    unzip /tmp/awscliv2.zip -d /tmp && \
+    /tmp/aws/install && \
+    rm -rf /tmp/aws /tmp/awscliv2.zip
 
-#initiallizing terraform
+# Copy project files
+COPY . .
+
+# Initialize terraform
 RUN terraform init
 
-#Passing AWS credentials to the container 
-ARG AWS_ACCESS_KEY_ID
-ARG AWS_SECRET_ACCESS_KEY
-ARG AWS_DEFAULT_REGION
-
-
-ENV  AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-ENV  AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-ENV  AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
-
-
-CMD ["cd", "/tmp/TerraformxAWS"]
+# Entrypoint - AWS credentials should be passed as environment variables at runtime
+CMD ["/bin/bash"]

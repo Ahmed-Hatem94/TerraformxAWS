@@ -7,18 +7,18 @@ Worker-count                = 2
 region                      = "us-east-1"
 
 master_root_block_device = {
-  volume_type           = "gp2"
+  volume_type           = "gp3"
   volume_size           = 30
   delete_on_termination = true
 }
 
 worker_root_block_device = {
-  volume_type           = "gp2"
+  volume_type           = "gp3"
   volume_size           = 30
   delete_on_termination = true
 }
 Jenkins_root_block_device = {
-  volume_type           = "gp2"
+  volume_type           = "gp3"
   volume_size           = 16
   delete_on_termination = true
 }

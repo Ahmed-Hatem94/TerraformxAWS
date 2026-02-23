@@ -1,5 +1,5 @@
 locals {
-  ami_filter_name = "amzn2-ami-hvm-*-x86_64-gp2"
+  ami_filter_name = "al2023-ami-*-x86_64"
   ami_owner       = "amazon"
 }
 
@@ -41,7 +41,7 @@ data "http" "my_public_ip" {
 }
 
 resource "aws_vpc" "main" {
-  cidr_block           = "10.0.0.0/16"
+  cidr_block           = var.vpc_cidr_block
   enable_dns_support   = true
   enable_dns_hostnames = true
   tags = {
@@ -49,11 +49,46 @@ resource "aws_vpc" "main" {
   }
 }
 
+resource "aws_subnet" "public" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.subnet_cidr_block
+  map_public_ip_on_launch = true
+  tags = {
+    Name = "main-public-subnet"
+  }
+}
+
+resource "aws_internet_gateway" "gw" {
+  vpc_id = aws_vpc.main.id
+  tags = {
+    Name = "main-igw"
+  }
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.gw.id
+  }
+
+  tags = {
+    Name = "main-public-rt"
+  }
+}
+
+resource "aws_route_table_association" "public" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+
 module "security_group" {
   source       = "./modules/security_group"
   name         = var.network-security-group-name
   description  = "Allow TLS inbound traffic"
   my_public_ip = "${chomp(data.http.my_public_ip.response_body)}/32"
+  vpc_id       = aws_vpc.main.id
   tags = {
     Name = "nsg-inbound"
   }
@@ -62,9 +97,10 @@ module "security_group" {
 module "master_instance" {
   source             = "./modules/ec2_instance"
   ami                = data.aws_ami.latest_amazon_linux.id
-  instance_type      = var.Master-instance-type
+  instance_type      = var.master_instance_type
   key_name           = aws_key_pair.key.key_name
   security_group_ids = [module.security_group.id]
+  subnet_id          = aws_subnet.public.id
   root_block_device  = var.master_root_block_device
   name_prefix        = "control-plane"
   tags = {
@@ -75,10 +111,11 @@ module "master_instance" {
 module "worker_instance" {
   source             = "./modules/ec2_instance"
   ami                = data.aws_ami.latest_amazon_linux.id
-  instance_type      = var.Worker-instance-type
+  instance_type      = var.worker_instance_type
   key_name           = aws_key_pair.key.key_name
   security_group_ids = [module.security_group.id]
-  instance_count     = var.Worker-count
+  subnet_id          = aws_subnet.public.id
+  instance_count     = var.worker_count
   root_block_device  = var.worker_root_block_device
   name_prefix        = "worker"
   tags = {
@@ -86,13 +123,14 @@ module "worker_instance" {
   }
 }
 
-module "Jenkins_instance" {
+module "jenkins_instance" {
   source             = "./modules/ec2_instance"
   ami                = data.aws_ami.latest_amazon_linux.id
-  instance_type      = var.Jenkins-instance-type
+  instance_type      = var.jenkins_instance_type
   key_name           = aws_key_pair.key.key_name
   security_group_ids = [module.security_group.id]
-  root_block_device  = var.Jenkins_root_block_device
+  subnet_id          = aws_subnet.public.id
+  root_block_device  = var.jenkins_root_block_device
   name_prefix        = "jenkins"
   tags = {
     Name = "jenkins"
@@ -100,14 +138,14 @@ module "Jenkins_instance" {
 }
 
 resource "local_file" "inventory" {
-  depends_on = [module.master_instance, module.worker_instance, module.Jenkins_instance]
+  depends_on = [module.master_instance, module.worker_instance, module.jenkins_instance]
   content = templatefile("${path.module}/ansible/inventory.tpl",
     {
       master = {
         "control-plane" = module.master_instance.public_ip[0]
       }
       Jenkins = {
-        "Jenkins" = module.Jenkins_instance.public_ip[0]
+        "Jenkins" = module.jenkins_instance.public_ip[0]
       }
       worker = zipmap(
         [for i in range(1, length(module.worker_instance.public_ip) + 1) : "worker${i}"],
